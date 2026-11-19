@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070b12" />
+    <meta
+      name="description"
+      content="A community-witnessed 3x3 speedcubing leaderboard. Submit your best time and tag the people who saw it."
+    />
+    <title>Rubix — 3x3 Speedcubing Leaderboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="Rubix Leaderboard home">
+          <svg class="logo-cube" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="46" height="46" rx="12" fill="#101827" stroke="rgba(255,255,255,.16)" />
+            <rect x="8" y="8" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="19.5" y="8" width="9" height="9" rx="2.5" fill="#ffd166" />
+            <rect x="31" y="8" width="9" height="9" rx="2.5" fill="#ff6b6b" />
+            <rect x="8" y="19.5" width="9" height="9" rx="2.5" fill="#5b9dff" />
+            <rect x="19.5" y="19.5" width="9" height="9" rx="2.5" fill="#f8fafc" />
+            <rect x="31" y="19.5" width="9" height="9" rx="2.5" fill="#ff9f43" />
+            <rect x="8" y="31" width="9" height="9" rx="2.5" fill="#a78bfa" />
+            <rect x="19.5" y="31" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="31" y="31" width="9" height="9" rx="2.5" fill="#5b9dff" />
+          </svg>
+          <span class="brand-text">
+            <span class="brand-name">Rubix</span>
+            <span class="brand-sub">Leaderboard</span>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Main navigation">
+          <a class="nav-link" href="#board">Leaderboard</a>
+          <a class="nav-link" href="#trust">How it works</a>
+          <a class="btn btn-small btn-primary" href="/submit">Submit a time</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="container hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot"></span> Community-witnessed 3×3 leaderboard</p>
+          <h1>Fast hands.<br /><span class="gradient-text">Real witnesses.</span></h1>
+          <p class="lede">
+            Log your best 3×3 solve, tag the people who saw it, and climb a leaderboard
+            that the community keeps honest.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-large" href="/submit">
+              Submit your time
+              <svg class="icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M4 10h11M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <a class="btn btn-ghost btn-large" href="#board">View leaderboard</a>
+          </div>
+          <ul class="hero-points">
+            <li>No account needed</li>
+            <li>Unlimited witnesses</li>
+            <li>Community moderated</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="mosaic">
+            <span class="tile tile--green"></span>
+            <span class="tile tile--yellow"></span>
+            <span class="tile tile--red"></span>
+            <span class="tile tile--blue"></span>
+            <span class="tile tile--white"></span>
+            <span class="tile tile--orange"></span>
+            <span class="tile tile--purple"></span>
+            <span class="tile tile--green"></span>
+            <span class="tile tile--blue"></span>
+          </div>
+          <div class="record-card">
+            <div class="record-top">
+              <span class="record-label">Fastest solve</span>
+              <span class="live-pill"><span class="live-dot"></span>Live</span>
+            </div>
+            <div class="record-time mono" id="hero-fastest">--.---</div>
+            <div class="record-person" id="hero-fastest-name">Waiting for the first record</div>
+            <div class="record-witnesses" id="hero-witnesses"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container stats" aria-label="Leaderboard statistics">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-solvers">—</span>
+          <span class="stat-label">Cubers ranked</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-entries">—</span>
+          <span class="stat-label">Timed entries</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-witnesses">—</span>
+          <span class="stat-label">Witness tags</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value mono" id="stat-fastest">—</span>
+          <span class="stat-label">Fastest time</span>
+        </div>
+      </section>
+
+      <section class="container podium-section" id="podium-section" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Top of the stack</p>
+            <h2>The podium</h2>
+          </div>
+          <p class="section-note">Best time per solver</p>
+        </div>
+        <div class="podium" id="podium"></div>
+      </section>
+
+      <section class="container board-section" id="board">
+        <div class="section-heading board-heading">
+          <div>
+            <p class="eyebrow">All solvers</p>
+            <h2>Leaderboard</h2>
+          </div>
+          <p class="section-note" id="board-count"></p>
+        </div>
+
+        <div class="toolbar">
+          <label class="search-field">
+            <svg class="icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.7" />
+              <path d="M13.2 13.2 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+            <span class="sr-only">Search by solver or witness</span>
+            <input id="search" type="search" placeholder="Search solver or witness…" autocomplete="off" />
+          </label>
+
+          <div class="segmented" role="group" aria-label="Sort order">
+            <button type="button" class="seg-btn is-active" data-sort="time">Fastest</button>
+            <button type="button" class="seg-btn" data-sort="date">Newest</button>
+          </div>
+
+          <label class="toggle">
+            <input type="checkbox" id="only-witnessed" />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span>Witnessed only</span>
+          </label>
+
+          <label class="toggle">
+            <input type="checkbox" id="show-all" />
+            <span class="toggle-track" aria-hidden="true"></span>
+            <span>All attempts</span>
+          </label>
+        </div>
+
+        <div class="table-card">
+          <div class="loading-state" id="board-loading">
+            <span class="spinner" aria-hidden="true"></span>
+            Loading the leaderboard…
+          </div>
+
+          <table class="lb-table" id="lb-table" hidden>
+            <thead>
+              <tr>
+                <th class="col-rank" scope="col">Rank</th>
+                <th scope="col">Solver</th>
+                <th scope="col">Time</th>
+                <th scope="col">Date</th>
+                <th scope="col">Witnesses</th>
+                <th class="col-actions" scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="lb-body"></tbody>
+          </table>
+
+          <div class="empty-state" id="board-empty" hidden>
+            <div class="empty-icon" aria-hidden="true">◇</div>
+            <h3>No entries match yet</h3>
+            <p>Try a different search or filter — or be the first name on the board.</p>
+            <a class="btn btn-primary" href="/submit">Submit a time</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="container trust-section" id="trust">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Built for trust</p>
+            <h2>Speed is the easy part.</h2>
+          </div>
+          <p class="section-note">Three layers of community context keep the board useful.</p>
+        </div>
+
+        <div class="trust-grid">
+          <article class="trust-card">
+            <span class="trust-step">01</span>
+            <div class="trust-icon trust-icon--green" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21c0-3.3 2.7-6 6-6s6 2.7 6 6M15 15c3.3 0 6 2.7 6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+            </div>
+            <h3>Bring as many witnesses as you like</h3>
+            <p>
+              Every entry lists the people who saw it happen. Names are suggested from
+              the community, but you can add anyone in plain text.
+            </p>
+          </article>
+
+          <article class="trust-card">
+            <span class="trust-step">02</span>
+            <div class="trust-icon trust-icon--yellow" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M5 21V4m0 0h11l-2.5 4L16 12H5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <h3>Anyone can raise a flag</h3>
+            <p>
+              Impossible time, invented witnesses or spam? The report button is one click
+              away on every entry. Your IP is only stored as a one-way hash.
+            </p>
+          </article>
+
+          <article class="trust-card">
+            <span class="trust-step">03</span>
+            <div class="trust-icon trust-icon--blue" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3 4.5 6.5v5c0 4.6 3.2 8 7.5 9.5 4.3-1.5 7.5-4.9 7.5-9.5v-5L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="m8.5 12 2.3 2.3 4.7-4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <h3>Enough reports pause the entry</h3>
+            <p>
+              After three reports from different networks an entry is hidden from the
+              board and waits for a moderator. Dismissed reports put it right back.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <svg class="logo-cube logo-cube--small" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="46" height="46" rx="12" fill="#101827" stroke="rgba(255,255,255,.16)" />
+            <rect x="8" y="8" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="19.5" y="8" width="9" height="9" rx="2.5" fill="#ffd166" />
+            <rect x="31" y="8" width="9" height="9" rx="2.5" fill="#ff6b6b" />
+            <rect x="8" y="19.5" width="9" height="9" rx="2.5" fill="#5b9dff" />
+            <rect x="19.5" y="19.5" width="9" height="9" rx="2.5" fill="#f8fafc" />
+            <rect x="31" y="19.5" width="9" height="9" rx="2.5" fill="#ff9f43" />
+            <rect x="8" y="31" width="9" height="9" rx="2.5" fill="#a78bfa" />
+            <rect x="19.5" y="31" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="31" y="31" width="9" height="9" rx="2.5" fill="#5b9dff" />
+          </svg>
+          <span>Rubix Leaderboard — fast times, real people.</span>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="/submit">Submit a time</a>
+          <a href="/#trust">How it works</a>
+          <a href="/admin">Moderation</a>
+        </nav>
+      </div>
+    </footer>
+
+    <script type="module" src="/js/index.js"></script>
+  </body>
+</html>

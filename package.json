@@ -1,0 +1,19 @@
+{
+  "name": "rubix-leaderboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A community-witnessed 3x3 speedcubing leaderboard",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "dev": "PORT=5565 node --watch server.js",
+    "build": "npm start",
+    "start": "NODE_ENV=production PORT=5555 node server.js",
+    "seed": "node scripts/seed.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

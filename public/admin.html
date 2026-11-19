@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070b12" />
+    <meta name="robots" content="noindex" />
+    <title>Moderation — Rubix Leaderboard</title>
+    <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/" aria-label="Rubix Leaderboard home">
+          <svg class="logo-cube" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="46" height="46" rx="12" fill="#101827" stroke="rgba(255,255,255,.16)" />
+            <rect x="8" y="8" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="19.5" y="8" width="9" height="9" rx="2.5" fill="#ffd166" />
+            <rect x="31" y="8" width="9" height="9" rx="2.5" fill="#ff6b6b" />
+            <rect x="8" y="19.5" width="9" height="9" rx="2.5" fill="#5b9dff" />
+            <rect x="19.5" y="19.5" width="9" height="9" rx="2.5" fill="#f8fafc" />
+            <rect x="31" y="19.5" width="9" height="9" rx="2.5" fill="#ff9f43" />
+            <rect x="8" y="31" width="9" height="9" rx="2.5" fill="#a78bfa" />
+            <rect x="19.5" y="31" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="31" y="31" width="9" height="9" rx="2.5" fill="#5b9dff" />
+          </svg>
+          <span class="brand-text">
+            <span class="brand-name">Rubix</span>
+            <span class="brand-sub">Moderation</span>
+          </span>
+        </a>
+        <nav class="site-nav" aria-label="Main navigation">
+          <a class="nav-link" href="/">Leaderboard</a>
+          <a class="nav-link" href="/submit">Submit a time</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container page-main admin-main">
+      <div class="page-heading">
+        <a class="back-link" href="/">
+          <svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10H5m5-5-5 5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back to leaderboard
+        </a>
+        <p class="eyebrow">Moderation</p>
+        <h1>Keep the board honest.</h1>
+        <p class="lede">
+          Review community reports, restore entries when a flag was a mistake, and remove
+          what does not belong.
+        </p>
+      </div>
+
+      <div class="panel loading-state" id="admin-boot">
+        <span class="spinner" aria-hidden="true"></span>
+        Checking your session…
+      </div>
+
+      <section class="panel login-card" id="login-view" hidden>
+        <div class="login-head">
+          <div class="trust-icon trust-icon--blue" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </div>
+          <h2>Moderator sign in</h2>
+          <p>Enter the password from <code>ADMIN_PASSWORD</code> in your <code>.env</code> file.</p>
+        </div>
+
+        <form id="login-form" class="login-form">
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input
+              type="password"
+              id="admin-password"
+              autocomplete="current-password"
+              placeholder="Moderator password"
+              required
+            />
+          </label>
+          <p class="form-error" id="login-error" hidden></p>
+          <button type="submit" class="btn btn-primary btn-large" id="login-btn">Sign in</button>
+        </form>
+      </section>
+
+      <section id="admin-view" hidden>
+        <div class="admin-topbar">
+          <div class="admin-stats">
+            <div class="admin-stat">
+              <strong id="admin-count-entries">0</strong>
+              <span>entries</span>
+            </div>
+            <div class="admin-stat">
+              <strong id="admin-count-review">0</strong>
+              <span>on hold</span>
+            </div>
+            <div class="admin-stat">
+              <strong id="admin-count-reports">0</strong>
+              <span>open reports</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-ghost" id="logout-btn">Sign out</button>
+        </div>
+
+        <div class="admin-toolbar">
+          <div class="segmented" role="group" aria-label="Filter entries">
+            <button type="button" class="seg-btn is-active" data-filter="review">Needs review</button>
+            <button type="button" class="seg-btn" data-filter="suspicious">Suspicious</button>
+            <button type="button" class="seg-btn" data-filter="all">All entries</button>
+          </div>
+          <p class="muted-text" id="admin-filter-note"></p>
+        </div>
+
+        <div class="panel loading-state" id="admin-loading" hidden>
+          <span class="spinner" aria-hidden="true"></span>
+          Loading the moderation queue…
+        </div>
+
+        <div class="empty-state panel" id="admin-empty" hidden>
+          <div class="empty-icon" aria-hidden="true">✓</div>
+          <h2 id="admin-empty-title">Nothing needs review</h2>
+          <p id="admin-empty-text">The board is quiet. New reports will show up here.</p>
+        </div>
+
+        <div class="admin-list" id="admin-list"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <svg class="logo-cube logo-cube--small" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <rect x="1" y="1" width="46" height="46" rx="12" fill="#101827" stroke="rgba(255,255,255,.16)" />
+            <rect x="8" y="8" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="19.5" y="8" width="9" height="9" rx="2.5" fill="#ffd166" />
+            <rect x="31" y="8" width="9" height="9" rx="2.5" fill="#ff6b6b" />
+            <rect x="8" y="19.5" width="9" height="9" rx="2.5" fill="#5b9dff" />
+            <rect x="19.5" y="19.5" width="9" height="9" rx="2.5" fill="#f8fafc" />
+            <rect x="31" y="19.5" width="9" height="9" rx="2.5" fill="#ff9f43" />
+            <rect x="8" y="31" width="9" height="9" rx="2.5" fill="#a78bfa" />
+            <rect x="19.5" y="31" width="9" height="9" rx="2.5" fill="#2fe08a" />
+            <rect x="31" y="31" width="9" height="9" rx="2.5" fill="#5b9dff" />
+          </svg>
+          <span>Rubix Leaderboard — fast times, real people.</span>
+        </div>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="/submit">Submit a time</a>
+          <a href="/#trust">How it works</a>
+          <a href="/admin">Moderation</a>
+        </nav>
+      </div>
+    </footer>
+
+    <dialog class="dialog" id="confirm-dialog">
+      <div class="dialog-card">
+        <button type="button" class="dialog-close" id="confirm-close" aria-label="Close dialog">×</button>
+        <p class="eyebrow">Destructive action</p>
+        <h2>Delete this entry?</h2>
+        <p class="dialog-subtitle" id="confirm-text"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete">Delete entry</button>
+        </div>
+      </div>
+    </dialog>
+
+    <script type="module" src="/js/admin.js"></script>
+  </body>
+</html>
