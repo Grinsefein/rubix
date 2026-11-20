@@ -2840,6 +2840,10 @@ body.dialog-open {
     padding-right: max(18px, env(safe-area-inset-right));
   }
 
+  .page-main {
+    padding-top: 14px;
+  }
+
   .header-inner {
     min-height: 62px;
     gap: 12px;
@@ -2888,7 +2892,31 @@ body.dialog-open {
   }
 
   .podium-strip {
-    margin-bottom: 12px;
+    margin: 0 0 10px;
+  }
+
+  .top-strip {
+    gap: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .top-card,
+  .top-card--1 {
+    min-height: 58px;
+    padding: 8px 6px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .top-card:last-child {
+    border-right: 0;
+  }
+
+  .top-card:hover {
+    background: rgba(255, 255, 255, 0.02);
+    transform: none;
   }
 
   .top-card {
@@ -2901,11 +2929,25 @@ body.dialog-open {
   }
 
   .rail-card {
-    padding: 16px;
+    padding: 14px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .rail-right {
+    margin-top: 4px;
+  }
+
+  .rail-right .rail-card {
+    border-bottom: 0;
   }
 
   .toolbar {
     align-items: stretch;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .search-field {
@@ -2924,6 +2966,10 @@ body.dialog-open {
     flex: 1;
   }
 
+  .board-footnote {
+    padding: 12px 0 4px;
+  }
+
   .search-field input,
   .field input,
   .field textarea,
@@ -2937,7 +2983,15 @@ body.dialog-open {
     font-size: 1.25rem;
   }
 
-  /* Leaderboard as a card list on phones */
+  .submission-rule-list {
+    margin: 10px 0 0;
+    padding: 0 0 0 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  /* Leaderboard as compact rows on phones */
   .table-card {
     overflow: visible;
     border: 0;
@@ -2965,7 +3019,7 @@ body.dialog-open {
   .lb-table tbody {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
   }
 
   .lb-table tbody tr {
@@ -2977,11 +3031,12 @@ body.dialog-open {
       'witness witness witness'
       'date date date';
     align-items: center;
-    gap: 7px 10px;
-    padding: 14px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: var(--panel);
+    gap: 5px 8px;
+    padding: 12px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
   }
 
   .lb-table tbody tr:hover {
@@ -3072,7 +3127,11 @@ body.dialog-open {
 
   .entry-hero,
   .witnesses-panel {
-    padding: 22px;
+    padding: 18px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
   }
 
   .entry-meta {
@@ -3086,7 +3145,10 @@ body.dialog-open {
   }
 
   .entry-cta {
-    padding: 22px;
+    padding: 18px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .review-banner {
@@ -3094,7 +3156,10 @@ body.dialog-open {
   }
 
   .login-card {
-    padding: 26px 22px;
+    padding: 22px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
 
   .admin-topbar {
@@ -3116,7 +3181,15 @@ body.dialog-open {
   }
 
   .admin-card {
-    padding: 18px;
+    padding: 16px 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .admin-list {
+    gap: 0;
   }
 
   .admin-card-head {
@@ -3205,12 +3278,8 @@ body.dialog-open {
 }
 
 @media (max-width: 430px) {
-  .top-strip {
-    grid-template-columns: 1fr;
-  }
-
   .top-card {
-    padding: 10px 12px;
+    padding: 8px 5px;
   }
 
   .top-name {
