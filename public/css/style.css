@@ -2836,17 +2836,17 @@ body.dialog-open {
 
 @media (max-width: 620px) {
   .container {
-    padding-left: max(18px, env(safe-area-inset-left));
-    padding-right: max(18px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
   }
 
   .page-main {
-    padding-top: 14px;
+    padding-top: 10px;
   }
 
   .header-inner {
-    min-height: 62px;
-    gap: 12px;
+    min-height: 54px;
+    gap: 8px;
   }
 
   .brand-sub {
@@ -2854,45 +2854,48 @@ body.dialog-open {
   }
 
   .logo-cube {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
   }
 
   .site-nav .btn-small {
-    min-height: 38px;
+    min-height: 36px;
   }
 
   .leaderboard-page {
-    padding-top: 18px;
+    padding-top: 12px;
   }
 
   .board-head {
     flex-wrap: wrap;
-    row-gap: 4px;
+    row-gap: 2px;
+    margin-bottom: 8px;
   }
 
   .board-title {
-    font-size: 1.9rem;
+    font-size: 1.55rem;
   }
 
   .board-count {
     padding-bottom: 1px;
+    font-size: 0.75rem;
   }
 
   .event-switcher {
-    margin-bottom: 12px;
-    padding: 3px;
-    border-radius: 12px;
+    margin-bottom: 8px;
+    padding: 2px;
+    border-radius: 9px;
   }
 
   .event-btn {
     flex: 0 0 auto;
-    min-height: 40px;
-    padding: 8px 16px;
+    min-height: 34px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
   }
 
   .podium-strip {
-    margin: 0 0 10px;
+    margin: 0 0 6px;
   }
 
   .top-strip {
@@ -2902,8 +2905,8 @@ body.dialog-open {
 
   .top-card,
   .top-card--1 {
-    min-height: 58px;
-    padding: 8px 6px;
+    min-height: 44px;
+    padding: 5px 4px;
     border: 0;
     border-right: 1px solid var(--line);
     border-radius: 0;
@@ -2920,8 +2923,21 @@ body.dialog-open {
   }
 
   .top-card {
-    padding: 9px 10px;
-    gap: 7px;
+    padding: 5px 4px;
+    gap: 4px;
+  }
+
+  .top-rank {
+    font-size: 0.55rem;
+  }
+
+  .top-name {
+    font-size: 0.68rem;
+    line-height: 1.15;
+  }
+
+  .top-time {
+    font-size: 0.72rem;
   }
 
   .top-witness {
@@ -2929,7 +2945,7 @@ body.dialog-open {
   }
 
   .rail-card {
-    padding: 14px 0;
+    padding: 10px 0;
     border: 0;
     border-bottom: 1px solid var(--line);
     border-radius: 0;
@@ -2946,8 +2962,12 @@ body.dialog-open {
 
   .toolbar {
     align-items: stretch;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .search-field {
+    min-height: 38px;
   }
 
   .search-field {
@@ -2964,10 +2984,14 @@ body.dialog-open {
 
   .toggle {
     flex: 1;
+    min-height: 34px;
+    font-size: 0.72rem;
   }
 
   .board-footnote {
-    padding: 12px 0 4px;
+    padding: 8px 0 2px;
+    font-size: 0.68rem;
+    line-height: 1.35;
   }
 
   .search-field input,
@@ -3024,15 +3048,13 @@ body.dialog-open {
 
   .lb-table tbody tr {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: 22px minmax(0, 1fr) max-content auto;
     grid-template-areas:
-      'rank solver actions'
-      'time time actions'
-      'witness witness witness'
-      'date date date';
+      'rank solver time actions'
+      'witness witness witness date';
     align-items: center;
-    gap: 5px 8px;
-    padding: 12px 0;
+    gap: 3px 6px;
+    padding: 7px 0;
     border: 0;
     border-bottom: 1px solid var(--line);
     border-radius: 0;
@@ -3047,7 +3069,7 @@ body.dialog-open {
     display: block;
     padding: 0;
     border: 0;
-    font-size: 0.88rem;
+    font-size: 0.76rem;
   }
 
   .lb-table td.cell-date {
@@ -3065,12 +3087,14 @@ body.dialog-open {
 
   .lb-table .cell-time {
     grid-area: time;
+    justify-self: end;
   }
 
   .lb-table .cell-date {
     grid-area: date;
     color: #64748b;
-    font-size: 0.72rem !important;
+    font-size: 0.62rem !important;
+    justify-self: end;
   }
 
   .lb-table .cell-witness {
@@ -3080,29 +3104,67 @@ body.dialog-open {
   .lb-table .cell-actions {
     display: flex;
     grid-area: actions;
-    align-self: start;
+    align-self: center;
     justify-content: flex-end;
-    gap: 2px;
+    gap: 0;
     white-space: normal;
   }
 
   .cell-solver .solver-cell {
     width: 100%;
+    gap: 6px;
   }
 
   .cell-solver .solver-name {
-    font-size: 0.95rem;
+    overflow: hidden;
+    font-size: 0.76rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .cell-time .time-cell {
-    font-size: 1.48rem;
-    letter-spacing: -0.03em;
+    gap: 4px;
+    font-size: 0.9rem;
+    letter-spacing: -0.04em;
+  }
+
+  .rank-badge {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 4px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+  }
+
+  .avatar--sm {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    font-size: 0.5rem;
+  }
+
+  .witness-cell {
+    gap: 5px;
+  }
+
+  .witness-pill {
+    padding: 2px 6px;
+    font-size: 0.58rem;
+  }
+
+  .cell-witness .avatar,
+  .cell-witness .avatar-stack .avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    font-size: 0.43rem;
   }
 
   .icon-btn,
   .witness-remove {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
   }
 
   .add-witness {
