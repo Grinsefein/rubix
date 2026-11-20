@@ -70,7 +70,7 @@
                 <path d="M13.2 13.2 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
               </svg>
               <span class="sr-only">Search by solver or witness</span>
-              <input id="search" type="search" placeholder="Search solver or witness…" autocomplete="off" />
+              <input id="search" type="search" placeholder="Search…" autocomplete="off" />
             </label>
 
             <div class="segmented" role="group" aria-label="Sort order">
@@ -79,9 +79,10 @@
             </div>
 
             <label class="toggle">
-              <input type="checkbox" id="show-all" />
+              <input type="checkbox" id="show-all" aria-label="Show all attempts" />
               <span class="toggle-track" aria-hidden="true"></span>
-              <span>All attempts</span>
+              <span class="toggle-label">All attempts</span>
+              <span class="toggle-label-short" aria-hidden="true">All</span>
             </label>
           </div>
 
@@ -125,7 +126,7 @@
             <div class="mini-stats">
               <div class="mini-stat">
                 <span class="mini-value" id="stat-solvers">—</span>
-                <span class="mini-label">Cubers</span>
+                <span class="mini-label">Solvers</span>
               </div>
               <div class="mini-stat">
                 <span class="mini-value" id="stat-entries">—</span>
@@ -135,10 +136,6 @@
                 <span class="mini-value" id="stat-witnesses">—</span>
                 <span class="mini-label">Witness tags</span>
               </div>
-              <div class="mini-stat">
-                <span class="mini-value mono" id="stat-fastest">—</span>
-                <span class="mini-label">Fastest</span>
-              </div>
             </div>
           </section>
 
@@ -147,12 +144,6 @@
             <span class="rail-time mono" id="hero-fastest">--.---</span>
             <span class="rail-name" id="hero-fastest-name">Waiting for the first record</span>
             <div class="rail-witnesses" id="hero-witnesses"></div>
-          </section>
-
-          <section class="panel rail-card rail-cta">
-            <h2>Got a fast solve?</h2>
-            <p>Add your time and everyone who saw it.</p>
-            <a class="btn btn-primary" href="/?submit=1" data-open-submit>Submit a time</a>
           </section>
         </aside>
 

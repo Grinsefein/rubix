@@ -1,10 +1,8 @@
 import { api, ApiError } from './api.js';
 import {
-  avatarColor,
   escapeHtml,
   formatDate,
   formatTimestamp,
-  initials,
   witnessTier,
 } from './ui.js';
 import { formatTimeMs } from './time.js';
@@ -105,7 +103,6 @@ function renderEntry(entry) {
       .map(
         (name) => `
           <li class="witness-item">
-            <span class="avatar avatar--${avatarColor(name)}">${escapeHtml(initials(name))}</span>
             <span class="witness-copy">
               <strong>${escapeHtml(name)}</strong>
               <span>Witness</span>

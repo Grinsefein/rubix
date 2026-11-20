@@ -1,10 +1,7 @@
 import { api } from './api.js';
 import {
-  avatarColor,
   escapeHtml,
   formatDate,
-  initials,
-  witnessAvatars,
   witnessTier,
 } from './ui.js';
 import { formatTimeMs } from './time.js';
@@ -30,7 +27,6 @@ const elements = {
   statSolvers: document.getElementById('stat-solvers'),
   statEntries: document.getElementById('stat-entries'),
   statWitnesses: document.getElementById('stat-witnesses'),
-  statFastest: document.getElementById('stat-fastest'),
   heroFastest: document.getElementById('hero-fastest'),
   heroName: document.getElementById('hero-fastest-name'),
   heroWitnesses: document.getElementById('hero-witnesses'),
@@ -50,6 +46,7 @@ const elements = {
 let reporter = null;
 let submitter = null;
 let entriesById = new Map();
+const expandedEntries = new Set();
 let loadToken = 0;
 
 function renderEventSwitcher() {
@@ -100,8 +97,6 @@ function renderStats(stats) {
   elements.statSolvers.textContent = stats.solvers;
   elements.statEntries.textContent = stats.entries;
   elements.statWitnesses.textContent = stats.witnessTags;
-  elements.statFastest.textContent =
-    stats.fastestMs == null ? '--.---' : formatTimeMs(stats.fastestMs);
 }
 
 function renderHero(entries) {
@@ -117,7 +112,6 @@ function renderHero(entries) {
   elements.heroFastest.textContent = formatTimeMs(leader.timeMs);
   elements.heroName.textContent = leader.name;
   elements.heroWitnesses.innerHTML = `
-    ${witnessAvatars(leader.witnesses, 4)}
     <span class="hero-witness-label">${escapeHtml(tier.label)}</span>
   `;
 }
@@ -137,9 +131,6 @@ function renderPodium(entries) {
       return `
         <a class="top-card top-card--${rank}" href="/entry?id=${entry.id}">
           <span class="top-rank">${rank}</span>
-          <span class="avatar avatar--sm avatar--${avatarColor(entry.name)}">${escapeHtml(
-            initials(entry.name)
-          )}</span>
           <span class="top-info">
             <span class="top-name">${escapeHtml(entry.name)}</span>
             <span class="top-time mono">${formatTimeMs(entry.timeMs)}</span>
@@ -228,6 +219,11 @@ function renderBoard() {
       const tier = witnessTier(entry.witnessCount);
       const isPB = state.all && entry.timeMs === entry.personBestMs;
       const rankClass = rank <= 3 ? `rank-badge rank-badge--${rank}` : 'rank-badge';
+      const isExpanded = expandedEntries.has(entry.id);
+      const witnesses =
+        entry.witnesses.length > 0
+          ? entry.witnesses.map((name) => escapeHtml(name)).join(', ')
+          : 'No witnesses are listed for this entry.';
       const video = entry.videoUrl
         ? `<a class="icon-btn" href="${escapeHtml(entry.videoUrl)}" target="_blank" rel="noopener noreferrer" title="Watch video" aria-label="Watch video for ${escapeHtml(entry.name)}">
              <svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M7 5.5v9l7-4.5-7-4.5Z" fill="currentColor"/></svg>
@@ -239,9 +235,6 @@ function renderBoard() {
           <td class="cell-rank"><span class="${rankClass}">${rank}</span></td>
           <td class="cell-solver">
             <a class="solver-cell" href="/entry?id=${entry.id}">
-              <span class="avatar avatar--sm avatar--${avatarColor(entry.name)}">${escapeHtml(
-                initials(entry.name)
-              )}</span>
               <span class="solver-name">${escapeHtml(entry.name)}</span>
             </a>
           </td>
@@ -253,7 +246,6 @@ function renderBoard() {
           <td class="cell-date date-cell">${formatDate(entry.solvedAt)}</td>
           <td class="cell-witness">
             <span class="witness-cell">
-              ${witnessAvatars(entry.witnesses)}
               <span class="witness-pill ${tier.className}">${escapeHtml(tier.label)}</span>
             </span>
           </td>
@@ -264,6 +256,25 @@ function renderBoard() {
             }" title="Report entry" aria-label="Report ${escapeHtml(entry.name)}">
               <svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 17V4m0 0h9l-2 3 2 3H5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
+            <button
+              type="button"
+              class="icon-btn entry-expand-btn"
+              data-expand-id="${entry.id}"
+              aria-controls="entry-details-${entry.id}"
+              aria-expanded="${isExpanded}"
+              aria-label="${isExpanded ? 'Hide' : 'Show'} witnesses for ${escapeHtml(entry.name)}"
+              title="${isExpanded ? 'Hide' : 'Show'} witnesses"
+            >
+              <svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="m7 8 3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </td>
+        </tr>
+        <tr class="entry-detail-row" id="entry-details-${entry.id}"${isExpanded ? '' : ' hidden'}>
+          <td colspan="6">
+            <div class="entry-details">
+              <strong>Witnesses</strong>
+              <p>${witnesses}</p>
+            </div>
           </td>
         </tr>
       `;
@@ -383,6 +394,18 @@ function bindEvents() {
   });
 
   elements.lbBody.addEventListener('click', (event) => {
+    const expandButton = event.target.closest('.entry-expand-btn');
+    if (expandButton) {
+      const entryId = Number(expandButton.dataset.expandId);
+      if (expandedEntries.has(entryId)) {
+        expandedEntries.delete(entryId);
+      } else {
+        expandedEntries.add(entryId);
+      }
+      renderBoard();
+      return;
+    }
+
     const button = event.target.closest('.report-btn');
     if (!button) return;
     const entry = entriesById.get(Number(button.dataset.reportId));
