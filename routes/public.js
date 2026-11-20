@@ -5,6 +5,7 @@ const express = require('express');
 
 const config = require('../config');
 const store = require('../store');
+const { EVENTS, DEFAULT_EVENT, isEvent, getEvent } = require('../events');
 const { validateSubmission, validateReport } = require('../validation');
 const { rateLimit } = require('../middleware/rate-limit');
 
@@ -31,20 +32,52 @@ function parseEntryId(req, res) {
   return id;
 }
 
-function hashIp(ip) {
-  return crypto
-    .createHmac('sha256', config.reportSalt)
-    .update(ip || 'unknown')
-    .digest('hex');
+function getReporterId(req, res) {
+  const match = String(req.headers.cookie ?? '').match(/(?:^|;\s*)rubix_reporter=([^;]+)/);
+  const existing = match ? decodeURIComponent(match[1]) : '';
+  if (/^[a-f0-9-]{36}$/i.test(existing)) return existing;
+
+  const reporterId = crypto.randomUUID();
+  res.setHeader(
+    'Set-Cookie',
+    `rubix_reporter=${encodeURIComponent(reporterId)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000${config.cookieSecure ? '; Secure' : ''}`
+  );
+  return reporterId;
 }
 
+function parseEvent(req, res) {
+  const raw = req.query.event;
+  const event = raw === undefined || raw === '' ? DEFAULT_EVENT : String(raw);
+  if (!isEvent(event)) {
+    res.status(400).json({ error: 'Unknown cube event.' });
+    return null;
+  }
+  return event;
+}
+
+router.get('/events', (req, res) => {
+  res.json({ events: EVENTS, defaultEvent: DEFAULT_EVENT });
+});
+
 router.get('/stats', (req, res) => {
-  res.json(store.getStats());
+  const event = parseEvent(req, res);
+  if (event === null) return;
+
+  res.json(store.getStats(event));
 });
 
 router.get('/leaderboard', (req, res) => {
+  const event = parseEvent(req, res);
+  if (event === null) return;
+
   const all = req.query.all === '1' || req.query.all === 'true';
-  res.json({ entries: store.getLeaderboard({ all }) });
+  const details = getEvent(event);
+  res.json({
+    event,
+    eventLabel: details?.label ?? event,
+    eventName: details?.name ?? event,
+    entries: store.getLeaderboard({ all, event }),
+  });
 });
 
 router.get('/people', (req, res) => {
@@ -89,7 +122,7 @@ router.post('/entries/:id/report', reportLimiter, (req, res) => {
     id,
     data.reason,
     data.note,
-    hashIp(req.ip),
+    getReporterId(req, res),
     config.reportHideThreshold
   );
 
@@ -98,7 +131,7 @@ router.post('/entries/:id/report', reportLimiter, (req, res) => {
   }
   if (result.status === 'duplicate') {
     return res.status(409).json({
-      error: 'You have already reported this entry from this network.',
+      error: 'You have already reported this entry from this browser.',
     });
   }
 

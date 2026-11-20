@@ -1,6 +1,7 @@
 'use strict';
 
 const { parseTimeToMs } = require('./time');
+const { DEFAULT_EVENT, isEvent } = require('./events');
 
 const NAME_MAX = 40;
 const NOTE_MAX = 280;
@@ -72,6 +73,12 @@ function validateSubmission(body) {
     fields.solver = `The solver name must be ${NAME_MAX} characters or fewer.`;
   }
 
+  const event =
+    typeof body.event === 'string' && body.event.trim() ? body.event.trim() : DEFAULT_EVENT;
+  if (!isEvent(event)) {
+    fields.event = 'Please choose a valid cube event.';
+  }
+
   const timeMs = parseTimeToMs(body.time);
   if (timeMs === null) {
     fields.time = 'Enter a time like 12.345 or 1:02.345 (between 1 second and 1 hour).';
@@ -107,6 +114,9 @@ function validateSubmission(body) {
   const witnesses = [];
   const rawWitnesses = Array.isArray(body.witnesses) ? body.witnesses : [];
   const seen = new Set();
+  if (rawWitnesses.length === 0) {
+    fields.witnesses = 'Please add at least one witness who saw the solve.';
+  }
 
   for (const raw of rawWitnesses) {
     if (raw === undefined || raw === null) continue;
@@ -133,12 +143,17 @@ function validateSubmission(body) {
     witnesses.push(name);
   }
 
+  if (witnesses.length === 0 && !fields.witnesses) {
+    fields.witnesses = 'Please add at least one witness who saw the solve.';
+  }
+
   if (Object.keys(fields).length > 0) return { fields };
 
   return {
     data: {
       solver,
       solverKey,
+      event,
       timeMs,
       solvedAt,
       videoUrl: video.value,

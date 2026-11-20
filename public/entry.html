@@ -4,15 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#070b12" />
-    <meta name="description" content="Entry details on the Rubix 3x3 speedcubing leaderboard." />
+    <meta name="description" content="Entry details on the Rubix 2x2 to 7x7 speedcubing leaderboard." />
     <title>Entry — Rubix Leaderboard</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/fonts.css" />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
@@ -39,9 +36,8 @@
           </span>
         </a>
         <nav class="site-nav" aria-label="Main navigation">
-          <a class="nav-link" href="/#board">Leaderboard</a>
-          <a class="nav-link" href="/#trust">How it works</a>
-          <a class="btn btn-small btn-primary" href="/submit">Submit a time</a>
+          <a class="nav-link" href="/">Leaderboard</a>
+          <a class="btn btn-small btn-primary" href="/?submit=1">Submit a time</a>
         </nav>
       </div>
     </header>
@@ -78,11 +74,15 @@
 
         <div class="entry-grid">
           <article class="panel entry-hero">
-            <p class="eyebrow">3×3 solve</p>
+            <p class="eyebrow" id="entry-event-label">3×3 Cube</p>
             <h1 class="entry-time mono" id="entry-time">--.---</h1>
             <p class="entry-solver">by <strong id="entry-name"></strong></p>
 
             <div class="entry-meta">
+              <div class="meta-item">
+                <span>Event</span>
+                <strong id="entry-event">3×3 Cube</strong>
+              </div>
               <div class="meta-item">
                 <span>Solved</span>
                 <strong id="entry-date"></strong>
@@ -122,8 +122,7 @@
             <p class="section-copy">People listed as having seen this solve.</p>
             <ul class="witness-list" id="witness-list"></ul>
             <p class="empty-note" id="witness-empty" hidden>
-              No witnesses were added. Without them, this result rests on the solver's
-              word alone.
+              No witnesses are listed for this entry.
             </p>
           </aside>
         </div>
@@ -132,8 +131,8 @@
           <div>
             <h2>Something looks off?</h2>
             <p>
-              Reports from several networks can pause an entry until a moderator reviews
-              it. Your IP address is stored only as a one-way hash.
+              Reports can pause an entry until a moderator reviews it. Reports use an
+              anonymous browser identifier; IP addresses are not stored.
             </p>
           </div>
           <button type="button" class="btn btn-danger btn-report" id="entry-report-cta">
@@ -161,8 +160,7 @@
           <span>Rubix Leaderboard — fast times, real people.</span>
         </div>
         <nav class="footer-links" aria-label="Footer">
-          <a href="/submit">Submit a time</a>
-          <a href="/#trust">How it works</a>
+          <a href="/?submit=1">Submit a time</a>
           <a href="/admin">Moderation</a>
         </nav>
       </div>

@@ -2,6 +2,7 @@
 
 const { db, transaction } = require('./db');
 const { nameKey } = require('./validation');
+const { DEFAULT_EVENT } = require('./events');
 
 function getOrCreatePerson(name) {
   const normalized = nameKey(name);
@@ -50,6 +51,7 @@ function serializeEntry(row) {
     id: Number(row.id),
     name: row.name,
     personId: Number(row.person_id),
+    event: row.event,
     timeMs: Number(row.time_ms),
     solvedAt: row.solved_at,
     videoUrl: row.video_url,
@@ -63,19 +65,21 @@ function serializeEntry(row) {
 }
 
 const ENTRY_COLUMNS = `
-  e.id, e.time_ms, e.solved_at, e.video_url, e.note, e.status, e.created_at,
+  e.id, e.event, e.time_ms, e.solved_at, e.video_url, e.note, e.status, e.created_at,
   p.id AS person_id, p.name,
   (SELECT MIN(e3.time_ms) FROM entries e3
-    WHERE e3.person_id = e.person_id AND e3.status = 'active') AS person_best
+    WHERE e3.person_id = e.person_id
+      AND e3.event = e.event
+      AND e3.status = 'active') AS person_best
 `;
 
-function getLeaderboard({ all = false } = {}) {
+function getLeaderboard({ all = false, event = DEFAULT_EVENT } = {}) {
   const sql = all
     ? `
       SELECT ${ENTRY_COLUMNS}
       FROM entries e
       JOIN people p ON p.id = e.person_id
-      WHERE e.status = 'active'
+      WHERE e.status = 'active' AND e.event = ?
       ORDER BY e.time_ms ASC, e.solved_at ASC, e.created_at ASC, e.id ASC
       LIMIT 500
     `
@@ -83,10 +87,12 @@ function getLeaderboard({ all = false } = {}) {
       SELECT ${ENTRY_COLUMNS}
       FROM entries e
       JOIN people p ON p.id = e.person_id
-      WHERE e.status = 'active'
+      WHERE e.status = 'active' AND e.event = ?
         AND e.id = (
           SELECT e2.id FROM entries e2
-          WHERE e2.person_id = e.person_id AND e2.status = 'active'
+          WHERE e2.person_id = e.person_id
+            AND e2.event = e.event
+            AND e2.status = 'active'
           ORDER BY e2.time_ms ASC, e2.solved_at ASC, e2.created_at ASC, e2.id ASC
           LIMIT 1
         )
@@ -94,7 +100,7 @@ function getLeaderboard({ all = false } = {}) {
       LIMIT 500
     `;
 
-  return attachWitnesses(db.prepare(sql).all()).map(serializeEntry);
+  return attachWitnesses(db.prepare(sql).all(event)).map(serializeEntry);
 }
 
 function getEntry(id) {
@@ -111,14 +117,21 @@ function getEntry(id) {
   return serializeEntry(attachWitnesses([row])[0]);
 }
 
-function getStats() {
+function getStats(event = null) {
+  const filter = event ? ' AND e.event = ?' : '';
+  const params = event ? [event] : [];
+
   const activeEntries = Number(
-    db.prepare("SELECT COUNT(*) AS n FROM entries WHERE status = 'active'").get().n
+    db
+      .prepare(`SELECT COUNT(*) AS n FROM entries e WHERE e.status = 'active'${filter}`)
+      .get(...params).n
   );
   const solvers = Number(
     db
-      .prepare("SELECT COUNT(DISTINCT person_id) AS n FROM entries WHERE status = 'active'")
-      .get().n
+      .prepare(
+        `SELECT COUNT(DISTINCT e.person_id) AS n FROM entries e WHERE e.status = 'active'${filter}`
+      )
+      .get(...params).n
   );
   const witnessTags = Number(
     db
@@ -126,15 +139,16 @@ function getStats() {
         SELECT COUNT(*) AS n
         FROM entry_witnesses ew
         JOIN entries e ON e.id = ew.entry_id
-        WHERE e.status = 'active'
+        WHERE e.status = 'active'${filter}
       `)
-      .get().n
+      .get(...params).n
   );
   const fastest = db
-    .prepare("SELECT MIN(time_ms) AS value FROM entries WHERE status = 'active'")
-    .get().value;
+    .prepare(`SELECT MIN(e.time_ms) AS value FROM entries e WHERE e.status = 'active'${filter}`)
+    .get(...params).value;
 
   return {
+    event: event ?? null,
     solvers,
     entries: activeEntries,
     witnessTags,
@@ -157,19 +171,23 @@ function getPeople() {
 }
 
 function createEntry(data) {
+  const event = data.event ?? DEFAULT_EVENT;
+
   return transaction(() => {
     const solver = getOrCreatePerson(data.solver);
     const previous = db
-      .prepare("SELECT MIN(time_ms) AS best FROM entries WHERE person_id = ? AND status = 'active'")
-      .get(solver.id);
+      .prepare(
+        "SELECT MIN(time_ms) AS best FROM entries WHERE person_id = ? AND event = ? AND status = 'active'"
+      )
+      .get(solver.id, event);
     const previousBestMs = previous?.best == null ? null : Number(previous.best);
 
     const info = db
       .prepare(`
-        INSERT INTO entries (person_id, time_ms, solved_at, video_url, note)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO entries (person_id, event, time_ms, solved_at, video_url, note)
+        VALUES (?, ?, ?, ?, ?, ?)
       `)
-      .run(solver.id, data.timeMs, data.solvedAt, data.videoUrl, data.note);
+      .run(solver.id, event, data.timeMs, data.solvedAt, data.videoUrl, data.note);
     const entryId = Number(info.lastInsertRowid);
 
     const insertWitness = db.prepare(`
@@ -184,20 +202,21 @@ function createEntry(data) {
 
     return {
       id: entryId,
+      event,
       isPB: previousBestMs === null || data.timeMs < previousBestMs,
       previousBestMs,
     };
   });
 }
 
-function addReport(entryId, reason, note, ipHash, threshold) {
+function addReport(entryId, reason, note, reporterId, threshold) {
   const entry = db.prepare('SELECT id, status FROM entries WHERE id = ?').get(entryId);
   if (!entry) return { status: 'not_found' };
 
   try {
     db.prepare(
-      'INSERT INTO reports (entry_id, reason, note, ip_hash) VALUES (?, ?, ?, ?)'
-    ).run(entryId, reason, note, ipHash);
+      'INSERT INTO reports (entry_id, reason, note, reporter_id) VALUES (?, ?, ?, ?)'
+    ).run(entryId, reason, note, reporterId);
   } catch (error) {
     if (String(error.message).toLowerCase().includes('unique')) {
       return { status: 'duplicate' };
@@ -221,7 +240,7 @@ function addReport(entryId, reason, note, ipHash, threshold) {
 function getAdminEntries() {
   const rows = db
     .prepare(`
-      SELECT e.id, e.time_ms, e.solved_at, e.video_url, e.note, e.status, e.created_at,
+      SELECT e.id, e.event, e.time_ms, e.solved_at, e.video_url, e.note, e.status, e.created_at,
         p.id AS person_id, p.name,
         (SELECT COUNT(*) FROM reports r WHERE r.entry_id = e.id) AS report_count
       FROM entries e
@@ -255,6 +274,7 @@ function getAdminEntries() {
   return withWitnesses.map((row) => ({
     id: Number(row.id),
     name: row.name,
+    event: row.event,
     timeMs: Number(row.time_ms),
     solvedAt: row.solved_at,
     videoUrl: row.video_url,

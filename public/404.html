@@ -7,12 +7,9 @@
     <meta name="robots" content="noindex" />
     <title>Page not found — Rubix Leaderboard</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/fonts.css" />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
@@ -60,8 +57,7 @@
           <span>Rubix Leaderboard — fast times, real people.</span>
         </div>
         <nav class="footer-links" aria-label="Footer">
-          <a href="/submit">Submit a time</a>
-          <a href="/#trust">How it works</a>
+          <a href="/?submit=1">Submit a time</a>
           <a href="/admin">Moderation</a>
         </nav>
       </div>

@@ -7,12 +7,9 @@
     <meta name="robots" content="noindex" />
     <title>Moderation — Rubix Leaderboard</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/css/fonts.css" />
     <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
@@ -38,9 +35,9 @@
             <span class="brand-sub">Moderation</span>
           </span>
         </a>
-        <nav class="site-nav" aria-label="Main navigation">
+        <nav class="site-nav site-nav--plain" aria-label="Main navigation">
           <a class="nav-link" href="/">Leaderboard</a>
-          <a class="nav-link" href="/submit">Submit a time</a>
+          <a class="nav-link" href="/?submit=1">Submit a time</a>
         </nav>
       </div>
     </header>
@@ -110,12 +107,64 @@
 
         <div class="admin-toolbar">
           <div class="segmented" role="group" aria-label="Filter entries">
-            <button type="button" class="seg-btn is-active" data-filter="review">Needs review</button>
-            <button type="button" class="seg-btn" data-filter="suspicious">Suspicious</button>
-            <button type="button" class="seg-btn" data-filter="all">All entries</button>
+            <button type="button" class="seg-btn is-active" data-filter="review">
+              Needs review <span class="seg-count" id="filter-count-review">0</span>
+            </button>
+            <button type="button" class="seg-btn" data-filter="suspicious">
+              Suspicious <span class="seg-count" id="filter-count-suspicious">0</span>
+            </button>
+            <button type="button" class="seg-btn" data-filter="all">
+              All <span class="seg-count" id="filter-count-all">0</span>
+            </button>
           </div>
-          <p class="muted-text" id="admin-filter-note"></p>
+
+          <div class="admin-tools">
+            <label class="search-field admin-search">
+              <svg class="icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.7" />
+                <path d="M13.2 13.2 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              </svg>
+              <span class="sr-only">Search the moderation queue</span>
+              <input
+                id="admin-search"
+                type="search"
+                placeholder="Search name, witness, report…"
+                autocomplete="off"
+                title="Press / to search"
+              />
+            </label>
+
+            <label class="select-field">
+              <span class="sr-only">Filter by cube event</span>
+              <select id="admin-event">
+                <option value="all">All events</option>
+                <option value="222">2×2</option>
+                <option value="333">3×3</option>
+                <option value="444">4×4</option>
+                <option value="555">5×5</option>
+                <option value="666">6×6</option>
+                <option value="777">7×7</option>
+              </select>
+            </label>
+
+            <label class="select-field">
+              <span class="sr-only">Sort moderation entries</span>
+              <select id="admin-sort">
+                <option value="reports">Most reports</option>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="fastest">Fastest time</option>
+              </select>
+            </label>
+
+            <button type="button" class="btn btn-ghost btn-small admin-refresh" id="admin-refresh">
+              <svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 10a6 6 0 1 1-1.8-4.3M16 4v4h-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Refresh
+            </button>
+          </div>
         </div>
+
+        <p class="muted-text admin-filter-note" id="admin-filter-note"></p>
 
         <div class="panel loading-state" id="admin-loading" hidden>
           <span class="spinner" aria-hidden="true"></span>
@@ -129,6 +178,10 @@
         </div>
 
         <div class="admin-list" id="admin-list"></div>
+
+        <div class="admin-load-more">
+          <button type="button" class="btn btn-ghost" id="admin-load-more" hidden>Load more</button>
+        </div>
       </section>
     </main>
 
@@ -150,8 +203,7 @@
           <span>Rubix Leaderboard — fast times, real people.</span>
         </div>
         <nav class="footer-links" aria-label="Footer">
-          <a href="/submit">Submit a time</a>
-          <a href="/#trust">How it works</a>
+          <a href="/?submit=1">Submit a time</a>
           <a href="/admin">Moderation</a>
         </nav>
       </div>

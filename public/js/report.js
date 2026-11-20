@@ -1,5 +1,6 @@
 import { api, ApiError } from './api.js';
-import { formatTimeMs, showToast } from './ui.js';
+import { showToast } from './ui.js';
+import { formatTimeMs } from './time.js';
 
 const REASONS = [
   {
@@ -62,7 +63,7 @@ function buildDialog() {
       <h2>Report this entry</h2>
       <p class="dialog-subtitle">
         You are reporting <strong data-report-name></strong> — <span class="mono" data-report-time></span>.
-        Reports from several networks can hide an entry until a moderator reviews it.
+        Enough reports can hide an entry until a moderator reviews it.
       </p>
       <fieldset class="reason-grid">
         <legend class="sr-only">Why are you reporting this entry?</legend>
@@ -134,7 +135,12 @@ function buildDialog() {
           ? 'Thanks. This entry has been put on hold for review.'
           : 'Thanks — your report was sent to the moderators.'
       );
-      await reportedCallback(activeEntry, result);
+
+      try {
+        await reportedCallback(activeEntry, result);
+      } catch {
+        // The report itself succeeded; a failed refresh should not look like an error.
+      }
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'The report could not be sent. Please try again.';

@@ -18,7 +18,6 @@ module.exports = {
   port: Number.parseInt(process.env.PORT ?? '', 10) || (isProduction ? 5555 : 5565),
   adminPassword: process.env.ADMIN_PASSWORD ?? '',
   sessionSecret: process.env.SESSION_SECRET ?? 'rubix-development-secret-change-me',
-  reportSalt: process.env.REPORT_SALT ?? process.env.SESSION_SECRET ?? 'rubix-report-salt',
   reportHideThreshold: Number.isFinite(reportThreshold) && reportThreshold > 0 ? reportThreshold : 3,
   cookieSecure: process.env.COOKIE_SECURE === 'true',
   trustProxy: process.env.TRUST_PROXY === 'true',

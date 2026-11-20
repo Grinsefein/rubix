@@ -2,7 +2,7 @@
   "name": "rubix-leaderboard",
   "version": "1.0.0",
   "private": true,
-  "description": "A community-witnessed 3x3 speedcubing leaderboard",
+  "description": "A community-witnessed 2x2 to 7x7 speedcubing leaderboard",
   "engines": {
     "node": ">=22.5"
   },

@@ -1,4 +1,5 @@
 import { api, ApiError } from './api.js';
+import { DEFAULT_EVENT, getEvent, isEvent } from './events.js';
 import { formatTimeMs, parseTimeInput } from './time.js';
 import {
   clearFieldErrors,
@@ -8,24 +9,31 @@ import {
   showToast,
 } from './ui.js';
 
-const form = document.getElementById('submit-form');
-const layout = document.getElementById('submit-layout');
-const success = document.getElementById('submit-success');
-const witnessRows = document.getElementById('witness-rows');
-const addWitnessButton = document.getElementById('add-witness');
-const witnessCountLabel = document.getElementById('witness-count-label');
-const errorBanner = document.getElementById('form-error');
-const submitButton = document.getElementById('submit-btn');
-const timeInput = document.getElementById('time');
-const timePreview = document.getElementById('time-preview');
-const noteInput = document.getElementById('note');
-const noteCount = document.getElementById('note-count');
-const solvedAtInput = document.getElementById('solved-at');
-const peopleList = document.getElementById('people-list');
-const successTitle = document.getElementById('success-title');
-const successMessage = document.getElementById('success-message');
-const successTime = document.getElementById('success-time');
-const successLink = document.getElementById('success-link');
+let dialog = null;
+let head = null;
+let form = null;
+let success = null;
+let witnessRows = null;
+let addWitnessButton = null;
+let witnessCountLabel = null;
+let errorBanner = null;
+let submitButton = null;
+let timeInput = null;
+let timePreview = null;
+let noteInput = null;
+let noteCount = null;
+let solvedAtInput = null;
+let eventSelect = null;
+let peopleList = null;
+let successTitle = null;
+let successMessage = null;
+let successTime = null;
+let successLink = null;
+
+let peopleLoaded = false;
+let activeEvent = DEFAULT_EVENT;
+let onSubmitted = () => {};
+let onClosed = () => {};
 
 function localIsoDate() {
   const now = new Date();
@@ -36,6 +44,7 @@ function localIsoDate() {
 }
 
 function updateWitnessMeta() {
+  if (!witnessRows) return;
   const rows = Array.from(witnessRows.querySelectorAll('.witness-row'));
   let filled = 0;
 
@@ -54,7 +63,7 @@ function createWitnessRow(value = '') {
     <span class="witness-index"></span>
     <input
       class="witness-input"
-      list="people-list"
+      list="submit-people-list"
       maxlength="40"
       autocomplete="off"
       placeholder="Witness name"
@@ -113,21 +122,47 @@ function updateTimePreview() {
   }
 }
 
+function resetForm() {
+  form.reset();
+  clearFieldErrors(form);
+  showFormBanner(errorBanner, '');
+  timeInput.classList.remove('is-invalid');
+  timePreview.textContent = 'Use 12.345 or 1:02.345.';
+  timePreview.className = 'field-hint';
+  noteCount.textContent = '0';
+
+  const today = localIsoDate();
+  solvedAtInput.max = today;
+  solvedAtInput.value = today;
+
+  witnessRows.innerHTML = '';
+  createWitnessRow();
+
+  eventSelect.value = activeEvent;
+  submitButton.disabled = false;
+  submitButton.textContent = 'Publish entry';
+
+  head.hidden = false;
+  form.hidden = false;
+  success.hidden = true;
+}
+
 function showSuccess(result, payload, witnessCount) {
   const milliseconds = parseTimeInput(payload.time);
+  const details = getEvent(payload.event);
+  const eventName = details?.name ?? payload.event;
 
   if (result.isPB && result.previousBestMs == null) {
     successTitle.textContent = 'Your first entry is live!';
-    successMessage.textContent =
-      'You are on the board. Bring a few witnesses next time to make the result easier to trust.';
+    successMessage.textContent = `You are on the ${eventName} board. Your witnesses are attached to the entry.`;
   } else if (result.isPB) {
     successTitle.textContent = 'New personal best!';
-    successMessage.textContent = `You beat your previous best of ${formatTimeMs(
+    successMessage.textContent = `You beat your previous ${eventName} best of ${formatTimeMs(
       result.previousBestMs
     )}. The new time is now your entry on the leaderboard.`;
   } else {
     successTitle.textContent = 'Time saved.';
-    successMessage.textContent = `Your personal best remains ${formatTimeMs(
+    successMessage.textContent = `Your ${eventName} personal best remains ${formatTimeMs(
       result.previousBestMs
     )}. The attempt is stored and visible with “All attempts”.`;
   }
@@ -140,16 +175,17 @@ function showSuccess(result, payload, witnessCount) {
 
   successTime.textContent = milliseconds === null ? payload.time : formatTimeMs(milliseconds);
   successLink.href = `/entry?id=${result.id}`;
-  layout.hidden = true;
+  head.hidden = true;
+  form.hidden = true;
   success.hidden = false;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  dialog.querySelector('.submit-dialog-card').scrollTop = 0;
 }
 
 function showApiError(error) {
   if (error instanceof ApiError) {
     if (error.fields) {
       showFieldErrors(form, error.fields);
-      const order = ['solver', 'time', 'solvedAt', 'videoUrl', 'note', 'witnesses'];
+      const order = ['event', 'solver', 'time', 'solvedAt', 'videoUrl', 'note', 'witnesses'];
       const first = order.find((name) => error.fields[name]);
       if (first === 'witnesses') {
         witnessRows.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -168,7 +204,73 @@ function showApiError(error) {
   showToast(message, 'error');
 }
 
-function bindEvents() {
+async function loadPeople() {
+  if (peopleLoaded) return;
+  try {
+    const data = await api('/api/people');
+    peopleList.innerHTML = data.names
+      .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+      .join('');
+    peopleLoaded = true;
+  } catch {
+    // Autocomplete is a convenience; the form still works without it.
+  }
+}
+
+function open({ event = DEFAULT_EVENT } = {}) {
+  if (!dialog) return;
+  activeEvent = isEvent(event) ? event : DEFAULT_EVENT;
+  resetForm();
+  loadPeople();
+
+  if (!dialog.open) dialog.showModal();
+  document.body.classList.add('dialog-open');
+  window.requestAnimationFrame(() => {
+    form.elements.solver?.focus({ preventScroll: true });
+  });
+}
+
+function close() {
+  if (dialog?.open) dialog.close();
+}
+
+function buildBindings() {
+  dialog = document.getElementById('submit-dialog');
+  if (!dialog) return false;
+
+  head = document.getElementById('submit-dialog-head');
+  form = document.getElementById('submit-form');
+  success = document.getElementById('submit-success');
+  witnessRows = document.getElementById('witness-rows');
+  addWitnessButton = document.getElementById('add-witness');
+  witnessCountLabel = document.getElementById('witness-count-label');
+  errorBanner = document.getElementById('submit-form-error');
+  submitButton = document.getElementById('submit-btn');
+  timeInput = document.getElementById('time');
+  timePreview = document.getElementById('time-preview');
+  noteInput = document.getElementById('note');
+  noteCount = document.getElementById('note-count');
+  solvedAtInput = document.getElementById('solved-at');
+  eventSelect = document.getElementById('submit-event');
+  peopleList = document.getElementById('submit-people-list');
+  successTitle = document.getElementById('success-title');
+  successMessage = document.getElementById('success-message');
+  successTime = document.getElementById('success-time');
+  successLink = document.getElementById('success-link');
+
+  dialog.querySelectorAll('[data-submit-close]').forEach((button) => {
+    button.addEventListener('click', close);
+  });
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) close();
+  });
+
+  dialog.addEventListener('close', () => {
+    document.body.classList.remove('dialog-open');
+    onClosed();
+  });
+
   addWitnessButton.addEventListener('click', () => {
     const input = createWitnessRow();
     input.focus();
@@ -192,6 +294,13 @@ function bindEvents() {
     showFormBanner(errorBanner, '');
   });
 
+  document.getElementById('submit-again').addEventListener('click', () => {
+    resetForm();
+    window.requestAnimationFrame(() => {
+      form.elements.solver?.focus({ preventScroll: true });
+    });
+  });
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     clearFieldErrors(form);
@@ -199,6 +308,7 @@ function bindEvents() {
 
     const witnesses = collectWitnesses();
     const payload = {
+      event: form.elements.event.value,
       solver: form.elements.solver.value,
       time: form.elements.time.value,
       solvedAt: form.elements.solvedAt.value,
@@ -212,8 +322,15 @@ function bindEvents() {
 
     try {
       const result = await api('/api/entries', { method: 'POST', body: payload });
+      activeEvent = isEvent(payload.event) ? payload.event : DEFAULT_EVENT;
       showSuccess(result, payload, witnesses.length);
       showToast('Entry published.', 'success');
+
+      try {
+        await onSubmitted(result, payload);
+      } catch {
+        // The entry is published; a failed leaderboard refresh is not a submit failure.
+      }
     } catch (error) {
       showApiError(error);
     } finally {
@@ -221,24 +338,14 @@ function bindEvents() {
       submitButton.textContent = 'Publish entry';
     }
   });
+
+  return true;
 }
 
-async function init() {
-  const today = localIsoDate();
-  solvedAtInput.max = today;
-  solvedAtInput.value = today;
+export function setupSubmitDialog({ onSubmitted: submitted, onClosed: closed } = {}) {
+  onSubmitted = typeof submitted === 'function' ? submitted : () => {};
+  onClosed = typeof closed === 'function' ? closed : () => {};
+  if (!dialog && !buildBindings()) return null;
 
-  createWitnessRow();
-  bindEvents();
-
-  try {
-    const data = await api('/api/people');
-    peopleList.innerHTML = data.names
-      .map((name) => `<option value="${escapeHtml(name)}"></option>`)
-      .join('');
-  } catch {
-    // Autocomplete is a convenience; the form still works without it.
-  }
+  return { open, close, isOpen: () => Boolean(dialog?.open) };
 }
-
-init();

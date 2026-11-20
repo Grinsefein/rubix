@@ -7,6 +7,7 @@ const { validateSubmission, validateReport, todayIso } = require('../validation'
 
 function validBody(overrides = {}) {
   return {
+    event: '333',
     solver: 'Felix Weber',
     time: '12.345',
     solvedAt: '2026-01-15',
@@ -21,8 +22,17 @@ test('validateSubmission accepts a valid submission', () => {
   const result = validateSubmission(validBody());
   assert.equal(result.fields, undefined);
   assert.equal(result.data.solver, 'Felix Weber');
+  assert.equal(result.data.event, '333');
   assert.equal(result.data.timeMs, 12345);
   assert.deepEqual(result.data.witnesses, ['Mara Klein', 'Jonas Fischer']);
+});
+
+test('validateSubmission defaults the event to 3×3 and rejects unknown events', () => {
+  const fallback = validateSubmission(validBody({ event: undefined }));
+  assert.equal(fallback.data.event, '333');
+
+  const invalid = validateSubmission(validBody({ event: '999' }));
+  assert.match(invalid.fields.event, /valid cube event/);
 });
 
 test('validateSubmission trims names and removes duplicate witnesses', () => {
@@ -36,6 +46,11 @@ test('validateSubmission trims names and removes duplicate witnesses', () => {
 test('validateSubmission rejects the solver as their own witness', () => {
   const result = validateSubmission(validBody({ witnesses: ['felix weber'] }));
   assert.match(result.fields.witnesses, /yourself/);
+});
+
+test('validateSubmission requires at least one witness', () => {
+  const result = validateSubmission(validBody({ witnesses: [] }));
+  assert.match(result.fields.witnesses, /at least one witness/);
 });
 
 test('validateSubmission rejects future and invalid dates', () => {

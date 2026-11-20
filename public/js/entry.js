@@ -8,6 +8,7 @@ import {
   witnessTier,
 } from './ui.js';
 import { formatTimeMs } from './time.js';
+import { getEvent } from './events.js';
 import { setupReportDialog } from './report.js';
 
 const params = new URLSearchParams(window.location.search);
@@ -18,6 +19,8 @@ const elements = {
   notFound: document.getElementById('entry-not-found'),
   content: document.getElementById('entry-content'),
   reviewBanner: document.getElementById('review-banner'),
+  eventLabel: document.getElementById('entry-event-label'),
+  event: document.getElementById('entry-event'),
   time: document.getElementById('entry-time'),
   name: document.getElementById('entry-name'),
   date: document.getElementById('entry-date'),
@@ -57,8 +60,12 @@ function setReportButtonsDisabled(disabled) {
 
 function renderEntry(entry) {
   const tier = witnessTier(entry.witnessCount);
-  document.title = `${formatTimeMs(entry.timeMs)} by ${entry.name} — Rubix Leaderboard`;
+  const details = getEvent(entry.event);
+  const eventName = details?.name ?? entry.event;
+  document.title = `${formatTimeMs(entry.timeMs)} — ${eventName} — Rubix Leaderboard`;
 
+  elements.eventLabel.textContent = eventName;
+  elements.event.textContent = eventName;
   elements.time.textContent = formatTimeMs(entry.timeMs);
   elements.name.textContent = entry.name;
   elements.date.textContent = formatDate(entry.solvedAt);

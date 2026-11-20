@@ -9,6 +9,9 @@ import {
   witnessAvatars,
 } from './ui.js';
 import { formatTimeMs } from './time.js';
+import { getEvent, eventLabel } from './events.js';
+
+const PAGE_SIZE = 12;
 
 const REASON_LABELS = {
   fake_time: 'Fake time',
@@ -30,11 +33,21 @@ const elements = {
   countReports: document.getElementById('admin-count-reports'),
   filterNote: document.getElementById('admin-filter-note'),
   filterButtons: Array.from(document.querySelectorAll('[data-filter]')),
+  filterCounts: {
+    review: document.getElementById('filter-count-review'),
+    suspicious: document.getElementById('filter-count-suspicious'),
+    all: document.getElementById('filter-count-all'),
+  },
+  search: document.getElementById('admin-search'),
+  eventSelect: document.getElementById('admin-event'),
+  sort: document.getElementById('admin-sort'),
+  refresh: document.getElementById('admin-refresh'),
   loading: document.getElementById('admin-loading'),
   empty: document.getElementById('admin-empty'),
   emptyTitle: document.getElementById('admin-empty-title'),
   emptyText: document.getElementById('admin-empty-text'),
   list: document.getElementById('admin-list'),
+  loadMore: document.getElementById('admin-load-more'),
   logout: document.getElementById('logout-btn'),
   confirmDialog: document.getElementById('confirm-dialog'),
   confirmText: document.getElementById('confirm-text'),
@@ -46,6 +59,10 @@ const elements = {
 const state = {
   entries: [],
   filter: 'review',
+  event: 'all',
+  search: '',
+  sort: 'reports',
+  visible: PAGE_SIZE,
 };
 
 let pendingDelete = null;
@@ -74,14 +91,72 @@ function handleApiError(error) {
   showToast(message, 'error');
 }
 
-function filterEntries(entries) {
-  if (state.filter === 'review') {
-    return entries.filter((entry) => entry.status === 'under_review' || entry.reportCount > 0);
+function matchesEvent(entry) {
+  return state.event === 'all' || entry.event === state.event;
+}
+
+function matchesReview(entry) {
+  return entry.status === 'under_review' || entry.reportCount > 0;
+}
+
+function matchesSuspicious(entry) {
+  return entry.witnessCount === 0 || entry.timeMs < 5000;
+}
+
+function matchesFilter(entry, filter) {
+  if (filter === 'review') return matchesReview(entry);
+  if (filter === 'suspicious') return matchesSuspicious(entry);
+  return true;
+}
+
+function matchesSearch(entry, needle) {
+  if (!needle) return true;
+
+  const details = getEvent(entry.event);
+  const haystack = [
+    entry.name,
+    String(entry.id),
+    entry.note ?? '',
+    entry.solvedAt,
+    details?.label ?? '',
+    details?.name ?? '',
+    ...entry.witnesses,
+    ...entry.reports.flatMap((report) => [
+      REASON_LABELS[report.reason] ?? '',
+      report.reason,
+      report.note ?? '',
+    ]),
+  ]
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(needle);
+}
+
+function sortEntries(entries) {
+  const sorted = [...entries];
+
+  if (state.sort === 'newest') {
+    return sorted.sort(
+      (a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id
+    );
   }
-  if (state.filter === 'suspicious') {
-    return entries.filter((entry) => entry.witnessCount === 0 || entry.timeMs < 5000);
+  if (state.sort === 'oldest') {
+    return sorted.sort(
+      (a, b) => a.createdAt.localeCompare(b.createdAt) || a.id - b.id
+    );
   }
-  return entries;
+  if (state.sort === 'fastest') {
+    return sorted.sort((a, b) => a.timeMs - b.timeMs || a.id - b.id);
+  }
+
+  return sorted.sort(
+    (a, b) =>
+      b.reportCount - a.reportCount ||
+      Number(b.status === 'under_review') - Number(a.status === 'under_review') ||
+      b.createdAt.localeCompare(a.createdAt) ||
+      b.id - a.id
+  );
 }
 
 function reportsHtml(entry) {
@@ -109,7 +184,7 @@ function reportsHtml(entry) {
 
 function entryCard(entry) {
   const underReview = entry.status === 'under_review';
-  const suspicious = entry.witnessCount === 0 || entry.timeMs < 5000;
+  const suspicious = matchesSuspicious(entry);
   const witnessNames =
     entry.witnessCount === 0
       ? 'No witnesses'
@@ -122,16 +197,19 @@ function entryCard(entry) {
           <span class="avatar avatar--${avatarColor(entry.name)}">${escapeHtml(
             initials(entry.name)
           )}</span>
-          <div>
+          <div class="admin-entry-main">
             <h2>${escapeHtml(entry.name)}</h2>
             <p class="admin-entry-sub">
               <span class="mono">${formatTimeMs(entry.timeMs)}</span>
               <span>·</span>
               <span>solved ${formatDate(entry.solvedAt)}</span>
+              <span>·</span>
+              <span class="admin-entry-id">#${entry.id}</span>
             </p>
           </div>
         </div>
         <div class="admin-tags">
+          <span class="event-chip">${escapeHtml(eventLabel(entry.event))}</span>
           <span class="status-pill ${
             underReview ? 'status-pill--review' : 'status-pill--live'
           }">${underReview ? 'Under review' : 'Live'}</span>
@@ -168,6 +246,9 @@ function entryCard(entry) {
               )}" target="_blank" rel="noopener noreferrer">Video</a>`
             : ''
         }
+        <button type="button" class="btn btn-ghost btn-small" data-action="copy" data-id="${entry.id}">
+          Copy link
+        </button>
         ${
           entry.reportCount > 0 || underReview
             ? `<button type="button" class="btn btn-ghost btn-small" data-action="dismiss" data-id="${entry.id}">Dismiss reports &amp; restore</button>`
@@ -182,31 +263,58 @@ function entryCard(entry) {
 }
 
 function renderAdmin() {
-  const entries = state.entries;
-  const reviewCount = entries.filter(
-    (entry) => entry.status === 'under_review' || entry.reportCount > 0
-  ).length;
-  const reportCount = entries.reduce((total, entry) => total + entry.reportCount, 0);
+  const eventEntries = state.entries.filter(matchesEvent);
+  const searchEntries = eventEntries.filter((entry) =>
+    matchesSearch(entry, state.search)
+  );
 
-  elements.countEntries.textContent = String(entries.length);
-  elements.countReview.textContent = String(reviewCount);
-  elements.countReports.textContent = String(reportCount);
+  elements.countEntries.textContent = String(eventEntries.length);
+  elements.countReview.textContent = String(eventEntries.filter(matchesReview).length);
+  elements.countReports.textContent = String(
+    eventEntries.reduce((total, entry) => total + entry.reportCount, 0)
+  );
 
-  const filtered = filterEntries(entries);
-  elements.filterNote.textContent =
+  elements.filterCounts.review.textContent = String(
+    searchEntries.filter((entry) => matchesFilter(entry, 'review')).length
+  );
+  elements.filterCounts.suspicious.textContent = String(
+    searchEntries.filter((entry) => matchesFilter(entry, 'suspicious')).length
+  );
+  elements.filterCounts.all.textContent = String(searchEntries.length);
+
+  const filtered = sortEntries(
+    searchEntries.filter((entry) => matchesFilter(entry, state.filter))
+  );
+  const visible = filtered.slice(0, state.visible);
+  const eventName = state.event === 'all' ? '' : ` in ${eventLabel(state.event)}`;
+  const filterLabel =
     state.filter === 'review'
-      ? `${filtered.length} waiting for a moderator`
+      ? 'to review'
       : state.filter === 'suspicious'
-        ? `${filtered.length} flagged for a quick look`
-        : `${filtered.length} total entries`;
+        ? 'flagged for a quick look'
+        : 'entries';
+
+  if (state.search) {
+    elements.filterNote.textContent = `${filtered.length} of ${eventEntries.length} ${
+      eventEntries.length === 1 ? 'entry' : 'entries'
+    } match “${state.search}”`;
+  } else {
+    elements.filterNote.textContent = `${filtered.length} ${filterLabel}${eventName} · ${
+      eventEntries.length
+    } total`;
+  }
 
   elements.loading.hidden = true;
 
   if (filtered.length === 0) {
     elements.list.innerHTML = '';
     elements.empty.hidden = false;
+    elements.loadMore.hidden = true;
 
-    if (state.filter === 'review') {
+    if (state.search) {
+      elements.emptyTitle.textContent = 'No matching entries';
+      elements.emptyText.textContent = `Nothing matches “${state.search}”. Try another name, witness, event or report keyword.`;
+    } else if (state.filter === 'review') {
       elements.emptyTitle.textContent = 'Nothing needs review';
       elements.emptyText.textContent =
         'No entries are on hold and no reports are waiting. The board is quiet.';
@@ -215,20 +323,28 @@ function renderAdmin() {
       elements.emptyText.textContent =
         'Nothing with zero witnesses or a sub-5-second time right now.';
     } else {
-      elements.emptyTitle.textContent = 'No entries yet';
-      elements.emptyText.textContent = 'Once times are submitted, they show up here.';
+      elements.emptyTitle.textContent = eventName
+        ? `No entries in ${eventLabel(state.event)} yet`
+        : 'No entries yet';
+      elements.emptyText.textContent =
+        'Once times are submitted, they show up here for moderation.';
     }
     return;
   }
 
   elements.empty.hidden = true;
-  elements.list.innerHTML = filtered.map(entryCard).join('');
+  elements.list.innerHTML = visible.map(entryCard).join('');
+
+  const remaining = filtered.length - visible.length;
+  elements.loadMore.hidden = remaining <= 0;
+  elements.loadMore.textContent = `Load more (${remaining} remaining)`;
 }
 
 async function loadEntries() {
   elements.loading.hidden = false;
   elements.empty.hidden = true;
   elements.list.innerHTML = '';
+  elements.loadMore.hidden = true;
 
   try {
     const data = await api('/api/admin/entries');
@@ -245,8 +361,22 @@ async function loadEntries() {
   }
 }
 
+async function refreshEntries() {
+  elements.refresh.disabled = true;
+  const original = elements.refresh.innerHTML;
+  elements.refresh.textContent = 'Refreshing…';
+
+  try {
+    await loadEntries();
+  } finally {
+    elements.refresh.innerHTML = original;
+    elements.refresh.disabled = false;
+  }
+}
+
 async function dismissReports(entry, button) {
   button.disabled = true;
+  button.textContent = 'Restoring…';
   try {
     await api(`/api/admin/entries/${entry.id}/dismiss-reports`, { method: 'POST' });
     showToast('Reports dismissed. The entry is live again.');
@@ -254,14 +384,28 @@ async function dismissReports(entry, button) {
   } catch (error) {
     handleApiError(error);
     button.disabled = false;
+    button.textContent = 'Dismiss reports & restore';
+  }
+}
+
+async function copyEntryLink(entry) {
+  const url = `${window.location.origin}/entry?id=${entry.id}`;
+  try {
+    if (!navigator.clipboard?.writeText) {
+      throw new Error('Clipboard API unavailable');
+    }
+    await navigator.clipboard.writeText(url);
+    showToast('Entry link copied.');
+  } catch {
+    showToast('Could not copy the link. Open the entry and copy the URL instead.', 'error');
   }
 }
 
 function askDelete(entry) {
   pendingDelete = entry;
-  elements.confirmText.textContent = `This permanently removes “${entry.name}” (${formatTimeMs(
-    entry.timeMs
-  )}) and all of its reports. This cannot be undone.`;
+  elements.confirmText.textContent = `This permanently removes “${entry.name}” (${eventLabel(
+    entry.event
+  )}, ${formatTimeMs(entry.timeMs)}) and all of its reports. This cannot be undone.`;
   elements.confirmDialog.showModal();
 }
 
@@ -327,11 +471,45 @@ function bindEvents() {
   elements.filterButtons.forEach((button) => {
     button.addEventListener('click', () => {
       state.filter = button.dataset.filter;
+      state.visible = PAGE_SIZE;
       elements.filterButtons.forEach((other) => {
         other.classList.toggle('is-active', other === button);
       });
       renderAdmin();
     });
+  });
+
+  elements.search.addEventListener('input', () => {
+    state.search = elements.search.value.trim();
+    state.visible = PAGE_SIZE;
+    renderAdmin();
+  });
+
+  elements.eventSelect.addEventListener('change', () => {
+    state.event = elements.eventSelect.value;
+    state.visible = PAGE_SIZE;
+    renderAdmin();
+  });
+
+  elements.sort.addEventListener('change', () => {
+    state.sort = elements.sort.value;
+    state.visible = PAGE_SIZE;
+    renderAdmin();
+  });
+
+  elements.loadMore.addEventListener('click', () => {
+    state.visible += PAGE_SIZE;
+    renderAdmin();
+  });
+
+  elements.refresh.addEventListener('click', refreshEntries);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== '/' || elements.confirmDialog.open) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    event.preventDefault();
+    elements.search.focus();
   });
 
   elements.list.addEventListener('click', (event) => {
@@ -345,6 +523,8 @@ function bindEvents() {
       dismissReports(entry, button);
     } else if (button.dataset.action === 'delete') {
       askDelete(entry);
+    } else if (button.dataset.action === 'copy') {
+      copyEntryLink(entry);
     }
   });
 
